@@ -1,11 +1,3 @@
-#!/usr/bin/env node
-/**
- * taskflow.js - CLI Task Queue Manager (resilient version)
- * - supports automatic migration from old 'jobs' schema to new 'tasks' schema
- * - strips BOM when reading files
- * - safer load/save and helpful errors
- */
-
 const { Command } = require('commander');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
@@ -21,34 +13,22 @@ const timestamp = () => new Date().toISOString();
 
 function isObject(o) { return o && typeof o === 'object' && !Array.isArray(o); }
 
-/**
- * Read file text and strip BOM if present.
- */
 function readTextFileStripBOM(p) {
   let txt = fs.readFileSync(p, 'utf8');
   if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
   return txt;
 }
 
-/**
- * Load data and auto-migrate legacy schema if needed.
- */
 function loadData() {
   try {
     if (!fs.existsSync(DATA_FILE)) return { tasks: [], config: DEFAULT_CONF };
-
     const text = readTextFileStripBOM(DATA_FILE);
     const raw = JSON.parse(text);
-
-    // If old schema with "jobs", migrate to new "tasks"
     if (isObject(raw) && Array.isArray(raw.jobs)) {
-      // map jobs -> tasks
       const tasks = raw.jobs.map(j => {
-        // map field names:
         return {
           id: j.id,
           command: j.command,
-          // map old states: pending->waiting, processing->running, completed->done, dead->failed
           state: (j.state === 'pending' ? 'waiting' :
                   j.state === 'processing' ? 'running' :
                   j.state === 'completed' ? 'done' :
@@ -57,7 +37,6 @@ function loadData() {
           max_retries: j.max_retries != null ? j.max_retries : DEFAULT_CONF.max_retries,
           created_at: j.created_at,
           updated_at: j.updated_at,
-          // rename next_attempt_at -> next_run_at
           next_run_at: j.next_attempt_at || null,
           last_error: j.last_error || null,
           exit_code: j.exit_code || null
@@ -65,19 +44,13 @@ function loadData() {
       });
       const config = isObject(raw.config) ? raw.config : DEFAULT_CONF;
       const migrated = { tasks, config };
-      // overwrite the old file with migrated structure
       saveData(migrated);
       return migrated;
     }
-
-    // If it already matches expected shape (tasks + config)
     if (isObject(raw) && Array.isArray(raw.tasks)) {
-      // be defensive: ensure config exists
       raw.config = raw.config && isObject(raw.config) ? raw.config : DEFAULT_CONF;
       return raw;
     }
-
-    // If unknown shape, reset to clean state (but don't overwrite existing file)
     console.warn('Warning: data file has unexpected shape, using empty dataset (file preserved).');
     return { tasks: [], config: DEFAULT_CONF };
   } catch (e) {
@@ -185,9 +158,9 @@ function execCommand(cmd) {
 }
 
 async function runWorker() {
-  console.log('TaskFlow worker running... Press Ctrl-C to stop.');
+  console.log('TaskFlow worker running Press Ctrl-C to stop.');
   let active = true;
-  process.on('SIGINT', () => { console.log('Stopping worker...'); active = false; });
+  process.on('SIGINT', () => { console.log('Stopping worker'); active = false; });
   while (active) {
     const task = claimTask();
     if (!task) {
@@ -216,7 +189,6 @@ async function runWorker() {
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-/* Utility: read JSON from file or stdin (strip BOM for files) */
 function readJsonFromFileSync(filePath) {
   let txt = fs.readFileSync(filePath, 'utf8');
   if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
@@ -232,14 +204,12 @@ function readJsonFromStdin() {
   });
 }
 
-/* ---- CLI ---- */
-
 cli.command('init').description('Initialize task storage').action(() => initData());
 
 cli
   .command('add [json]')
-  .description('Add new task JSON. Use --file <path> or - for stdin input')
-  .option('--file <path>', 'Read task JSON from file')
+  .description('Add new task JSON. Use -file <path> or - for stdin input')
+  .option('-file <path>', 'Read task JSON from file')
   .action(async (jsonArg, opts) => {
     try {
       let payload = null;
@@ -252,7 +222,7 @@ cli
       } else if (jsonArg === '-' || jsonArg === undefined) {
         if (jsonArg === '-') payload = await readJsonFromStdin();
         else {
-          console.error('No JSON provided. Use --file <path> or pass JSON as argument or "-" to read from stdin.');
+          console.error('No JSON provided. Use -file <path> or pass JSON as argument or "-" to read from stdin.');
           process.exit(1);
         }
       } else {
