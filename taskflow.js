@@ -209,7 +209,7 @@ cli.command('init').description('Initialize task storage').action(() => initData
 cli
   .command('add [json]')
   .description('Add new task JSON. Use --file <path> or - for stdin input')
-  .option('-file <path>', 'Read task JSON from file')
+  .option('--file <path>', 'Read task JSON from file')
   .action(async (jsonArg, opts) => {
     try {
       let payload = null;
