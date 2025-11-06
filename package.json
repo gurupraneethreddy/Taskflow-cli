@@ -1,0 +1,21 @@
+{
+  "name": "taskflow-cli",
+  "version": "1.0.0",
+  "main": "taskflow.js",
+  "description": "Command-line tool to manage and run queued background tasks with retry and logging.",
+  "scripts": {
+    "test": "node taskflow.js selfcheck"
+  },
+  "keywords": [
+    "cli",
+    "tasks",
+    "background",
+    "queue"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^14.0.2",
+    "uuid": "^13.0.0"
+  }
+}

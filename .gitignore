@@ -1,0 +1,5 @@
+Set-Content -Path .\.gitignore -Value "node_modules/
+taskdata.json
+*.log
+.DS_Store
+.env" -Encoding utf8
