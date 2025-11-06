@@ -12,7 +12,7 @@
     "background",
     "queue"
   ],
-  "author": "Your Name",
+  "author": "Guru Praneeth Reddy",
   "license": "MIT",
   "dependencies": {
     "commander": "^14.0.2",
